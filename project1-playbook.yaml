@@ -1,0 +1,38 @@
+- name: "generate war file"
+  hosts: local
+  become: true
+  vars:
+          gitdir: /tmp/addressbook-project1 
+  tasks:
+          - name: "install maven"
+            apt:
+                    name: maven
+          - name: " clone the repo"
+            git: 
+                  repo: "https://github.com/upshiftnow/addressbook"
+                  dest: "{{ gitdir }}"
+                  version: "master"
+          - name: "compile the package"
+            command:
+                    chdir: "{{ gitdir }}"
+                    cmd: " mvn package"
+- name: "setup webserver"
+  hosts: webserver
+  become: true
+  vars: 
+          gitdir: /tmp/addressbook-project1
+  tasks:
+          - name: "install tomcat9"
+            apt: 
+                   name: "tomcat9"
+            notify: "enable tomcat9"
+          - name: "Deploy WAR"
+            copy:
+                    src: "{{ gitdir }}/target/addressbook-2.0.war"
+                    dest: "/var/lib/tomcat9/webapps/addressbook.war"
+  handlers:
+          - name: "enable tomcat9"
+            service:
+                    name: "tomcat9"
+                    state: "started"
+                    enabled: yes
